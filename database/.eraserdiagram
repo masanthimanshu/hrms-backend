@@ -1,0 +1,30 @@
+entity-relationship-diagram
+
+user [icon: user, color: blue] {
+    id string pk
+    name string
+    email string
+    password hash
+    storeId string
+    isVerified boolean
+}
+
+attendance [icon: calendar, color: green] {
+    id string pk
+    userId string fk
+    latitude float
+    longitude float
+    imageUrl string
+    timestamp datetime
+}
+
+store [icon: building, color: orange] {
+    id string pk
+    name string
+    address string
+    latitude float
+    longitude float
+}
+
+user.storeId <> store.id
+user.id <> attendance.userId
