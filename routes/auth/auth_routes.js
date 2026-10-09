@@ -2,9 +2,19 @@ import { z } from "zod";
 import { Router } from "express";
 import { hashSync } from "bcrypt";
 import { AuthController } from "./auth_controller.js";
+import { userModel } from "../../database/user_model.js";
 
 export const routes = Router();
 const controller = new AuthController();
+
+routes.get("/get", async (req, res) => {
+  try {
+    const users = await userModel.find().select("-password");
+    res.send({ data: users });
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
+});
 
 routes.get("/health", (req, res) => {
   res.send({ status: "Auth Service is running" });
