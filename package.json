@@ -4,7 +4,6 @@
   "description": "A modular Node.js REST API backend for a Human Resource Management System (HRMS)",
   "main": "app.js",
   "type": "module",
-  "author": "Himanshu <masanthimanshu@gmail.com>",
   "license": "ISC",
   "scripts": {
     "start": "node .",
@@ -17,12 +16,12 @@
     "axios": "^1.20.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
-    "dotenv": "^18.0.6",
-    "express": "^5.2.1",
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
     "geolib": "^4.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.11.1",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
