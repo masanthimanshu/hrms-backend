@@ -1,11 +1,16 @@
 # HRMS Backend
 
+[![Live API](https://img.shields.io/badge/Live_API-Online-success?style=flat&logo=cloudflare)](https://hrms.scoobies.ai/app/health)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-[![Express Version](https://img.shields.io/badge/express-v5.2.1-blue.svg)](https://expressjs.com/)
+[![Express Version](https://img.shields.io/badge/express-v5.3.0-blue.svg)](https://expressjs.com/)
 [![MongoDB Mongoose](https://img.shields.io/badge/mongoose-v9.11.1-green.svg)](https://mongoosejs.com/)
+[![Docker Ready](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](compose.yaml)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
 
-A modular, production-ready Node.js REST API backend for a **Human Resource Management System (HRMS)**. Engineered with Express 5, MongoDB (Mongoose), and modern ES Modules, this service powers workforce operations including employee onboarding, multi-branch store cataloging, geo-tagged attendance tracking, and dual-layer security verification.
+A modular, production-ready Node.js REST API backend for an enterprise **Human Resource Management System (HRMS)**. Engineered with Express 5, MongoDB (Mongoose), native ES Modules, AWS S3 presigned asset storage, and Docker containerization, this service manages workforce operations including employee onboarding, multi-branch store cataloging, geo-tagged attendance tracking, and dual-layer security verification.
+
+> **Live Deployment Base URL:** [`https://hrms.scoobies.ai/app/`](https://hrms.scoobies.ai/app/)  
+> **Health Check:** [`https://hrms.scoobies.ai/app/health`](https://hrms.scoobies.ai/app/health)
 
 ---
 
@@ -16,17 +21,18 @@ A modular, production-ready Node.js REST API backend for a **Human Resource Mana
 - [Tech Stack](#tech-stack)
 - [Architecture & Data Model](#architecture--data-model)
 - [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
+- [How to Get Started](#how-to-get-started)
   - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
   - [Environment Configuration](#environment-configuration)
-  - [Running the Application](#running-the-application)
+  - [Option A: Run with Docker (Recommended)](#option-a-run-with-docker-recommended)
+  - [Option B: Run Locally with Node.js](#option-b-run-locally-with-nodejs)
 - [Usage Examples](#usage-examples)
   - [1. Health Check](#1-health-check)
-  - [2. User Registration & Login](#2-user-registration--login)
-  - [3. Token Refresh Flow](#3-token-refresh-flow)
-  - [4. Store Management](#4-store-management)
-- [Support & Help](#support--help)
+  - [2. Store Management](#2-store-management)
+  - [3. User Registration & Authentication](#3-user-registration--authentication)
+  - [4. Dual-Token Refresh Flow](#4-dual-token-refresh-flow)
+  - [5. Protected Route Access](#5-protected-route-access)
+- [Where Users Can Get Help](#where-users-can-get-help)
 - [Contributing](#contributing)
 - [Maintainers](#maintainers)
 - [License](#license)
@@ -35,36 +41,39 @@ A modular, production-ready Node.js REST API backend for a **Human Resource Mana
 
 ## What the Project Does
 
-**HRMS Backend** serves as the central API service for enterprise workforce and facility management:
+**HRMS Backend** operates as the core API service for enterprise workforce, facility, and attendance administration:
 
-- **Store & Branch Cataloging**: Register and query physical store locations with geocoded coordinates (latitude & longitude) and physical addresses.
-- **Employee Onboarding**: Register organizational users linked to designated store locations with salted, hashed passwords (`bcrypt` 15 rounds).
-- **Secure Access Control**: Protect organizational resources using account-level header validation (`account`) alongside JSON Web Tokens (JWT).
-- **Dual-Token Session Lifecycle**: Distribute short-lived access tokens (2 days) and long-lived refresh tokens (10 days) with dedicated token rotation routes.
-- **Geo-Verified Attendance Modeling**: Database schema ready for recording field employee attendance with geolocation coordinates, proof photo URLs, and timestamps.
+- **Store & Branch Cataloging**: Register and query physical facility branches with geo-coordinates (latitude & longitude) and physical addresses.
+- **Employee Onboarding & Authentication**: Onboard organizational personnel mapped to specific store branches with securely salted password hashing (`bcrypt` 15 rounds).
+- **Two-Tier Middleware Protection**: Secure administrative endpoints via static account key headers (`account`), while protecting session-based actions via signature-verified JSON Web Tokens (JWT).
+- **Dual-Token Lifecycle**: Issue short-lived access tokens (2-day validity) and long-lived refresh tokens (10-day validity) with automated token rotation and renewal.
+- **Geo-Verified Attendance & Media Proofs**: Store schemas designed for tracking check-ins with location coordinates and presigned AWS S3 URLs for photo verification.
 
 ---
 
 ## Why It Is Useful
 
-- **Dual-Layer Middleware Security**: Guards all sensitive `/account/*` routes with account validation and protects protected endpoints with signature-verified JWT checking.
-- **Fail-Safe Request Validation**: Integrates [Zod](https://zod.dev/) runtime schema validation to reject malformed payloads before hitting controllers.
-- **Modern ES Module Architecture**: Built cleanly with native Node.js ES Modules (`import`/`export`) and Express 5 for enhanced async route handling.
-- **Scalable Document Modeling**: Pre-indexed Mongoose schemas with relational foreign keys (`storeId`, `userId`) and unique constraints on critical fields.
-- **Developer-Friendly Setup**: Zero extraneous build tooling—clone, configure your `.env`, and start immediately with `npm run dev`.
+- **Instant Live Access**: Test endpoints immediately against the live deployment at [`https://hrms.scoobies.ai/app/`](https://hrms.scoobies.ai/app/) without local configuration.
+- **Dual-Layer Middleware Security**: Route guards enforce tenant/account validation across `/account/*` routes, while cryptographic JWT checks protect `/secure/*` resources.
+- **Fail-Safe Schema Validation**: Integrates [Zod](https://zod.dev/) strict runtime validation to reject invalid or unauthorized payload shapes before reaching business logic.
+- **Modern ES Module & Express 5 Core**: Built cleanly with native Node.js ES Modules (`import`/`export`) and Express 5 for enhanced async route handling and error handling.
+- **Containerized for Production**: Pre-configured with a lightweight `Dockerfile` and `compose.yaml` for one-command deployment alongside MongoDB.
+- **Scalable Document Modeling**: Optimized Mongoose schemas with indexed foreign keys (`storeId`, `userId`) and unique integrity constraints.
 
 ---
 
 ## Tech Stack
 
-| Layer              | Technology                                                                                                        | Purpose                                            |
-| :----------------- | :---------------------------------------------------------------------------------------------------------------- | :------------------------------------------------- |
-| **Runtime**        | [Node.js](https://nodejs.org/) (ESM)                                                                              | Server-side JavaScript runtime                     |
-| **Framework**      | [Express 5](https://expressjs.com/)                                                                               | Lightweight web server & routing framework         |
-| **Database**       | [MongoDB](https://www.mongodb.com/) via [Mongoose 9](https://mongoosejs.com/)                                     | Schema modeling, validation, and persistence       |
-| **Validation**     | [Zod](https://zod.dev/)                                                                                           | Strict runtime request schema validation           |
-| **Authentication** | [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) & [bcrypt](https://github.com/kelektiv/node.bcrypt.js) | Password hashing (15 rounds) & dual JWT management |
-| **Code Quality**   | [ESLint](https://eslint.org/) & [Prettier](https://prettier.io/)                                                  | Code style linting and formatting                  |
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Runtime** | [Node.js](https://nodejs.org/) (ESM, Node 24 support) | Server-side JavaScript runtime |
+| **Framework** | [Express 5](https://expressjs.com/) (`v5.3.0`) | High-performance routing & web server |
+| **Database** | [MongoDB](https://www.mongodb.com/) via [Mongoose 9](https://mongoosejs.com/) | Relational document modeling & validation |
+| **Validation** | [Zod](https://zod.dev/) (`v4.x`) | Strict runtime schema parsing & type safety |
+| **Authentication** | [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) & [bcrypt](https://github.com/kelektiv/node.bcrypt.js) | Password hashing (15 rounds) & dual JWT lifecycle |
+| **Cloud Storage** | [AWS SDK for JavaScript v3](https://aws.amazon.com/sdk-for-javascript/) (`@aws-sdk/client-s3`) | Presigned S3 upload & retrieval for proof images |
+| **Containerization**| [Docker](https://www.docker.com/) & Docker Compose | Multi-container reproducible development & deployment |
+| **Code Quality** | [ESLint](https://eslint.org/) | Code style linting and ES standard enforcement |
 
 ---
 
@@ -93,7 +102,7 @@ The database layer models relations between physical stores, employees, and dail
                                            | userId (FK)      |
                                            | latitude         |
                                            | longitude        |
-                                           | imageUrl         |
+                                           | imageUrl (S3)    |
                                            | timestamps       |
                                            +------------------+
 ```
@@ -104,6 +113,8 @@ The database layer models relations between physical stores, employees, and dail
 
 ```text
 hrms-backend/
+├── aws/
+│   └── s3_client.js           # AWS S3 presigned URL generation and client utilities
 ├── database/
 │   ├── attendance_model.js    # Mongoose schema for attendance check-ins
 │   ├── store_model.js         # Mongoose schema for store locations
@@ -121,26 +132,71 @@ hrms-backend/
 ├── utils/
 │   ├── middleware.js          # JWT and Account authorization middlewares
 │   └── tokens.js              # Token generation and verification utility
+├── .dockerignore              # Files excluded from Docker image builds
 ├── .env.example               # Environment variable configuration template
 ├── app.js                     # Application entry point & middleware mounting
+├── compose.yaml               # Docker Compose service definition (App + Mongo)
 ├── CONTRIBUTING.md            # Guidelines for open source contributors
+├── Dockerfile                 # Container image configuration (Node.js base)
 ├── LICENSE                    # ISC license terms
 └── package.json               # NPM scripts, metadata, and dependencies
 ```
 
 ---
 
-## Getting Started
+## How to Get Started
 
 ### Prerequisites
 
-Ensure the following tools are installed on your environment:
+Ensure you have one of the following installed:
+- **Docker & Docker Compose** (Recommended for zero-dependency local runs), OR
+- **Node.js**: `v18.0.0` or higher (tested on Node 24)
+- **MongoDB**: A running local instance (`mongodb://localhost:27017`) or a [MongoDB Atlas](https://www.mongodb.com/atlas) connection URI
 
-- **Node.js**: `v18.0.0` or higher
-- **npm**: `v9.0.0` or higher
-- **MongoDB**: A running local instance (`mongodb://localhost:27017`) or a remote [MongoDB Atlas](https://www.mongodb.com/atlas) connection URI
+### Environment Configuration
 
-### Installation
+Create a local environment file from the template:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and configure your variables:
+
+```env
+# Server Port
+PORT=5500
+
+# MongoDB URI (database query appends ?authSource=admin at runtime)
+DB_URL=mongodb://localhost:27017/hrms
+
+# Account Authorization Key (sent in 'account' header)
+ACCOUNT_ID=your_account_id_here
+
+# JWT Secrets for Access and Refresh Tokens
+AUTH_TOKEN_SECRET=your_auth_token_secret_here
+REFRESH_TOKEN_SECRET=your_refresh_token_secret_here
+
+# AWS Configuration (optional, for attendance image storage)
+BUCKET_NAME=your_s3_bucket_name
+```
+
+---
+
+### Option A: Run with Docker (Recommended)
+
+Start both the backend application and MongoDB with a single command:
+
+```bash
+docker compose up -d --build
+```
+
+- The API is available at: `http://localhost:5500`
+- To stop the containers: `docker compose down`
+
+---
+
+### Option B: Run Locally with Node.js
 
 1. Clone the repository:
 
@@ -155,135 +211,77 @@ Ensure the following tools are installed on your environment:
    npm install
    ```
 
-### Environment Configuration
+3. Start the application:
+   - **Development Mode** (with automatic reload via `nodemon`):
 
-Create a local environment file from the provided template:
+     ```bash
+     npm run dev
+     ```
 
-```bash
-cp .env.example .env
-```
+   - **Production Mode**:
 
-Open `.env` and fill in your environment values:
+     ```bash
+     npm start
+     ```
 
-```env
-# Server Port
-PORT=5500
+4. The console will confirm:
 
-# MongoDB URI (appends ?authSource=admin at runtime)
-DB_URL=mongodb://localhost:27017/hrms
-
-# Account Authorization Key (sent in 'account' header)
-ACCOUNT_ID=your_account_id_here
-
-# JWT Secrets for Access and Refresh Tokens
-AUTH_TOKEN_SECRET=your_auth_token_secret_here
-REFRESH_TOKEN_SECRET=your_refresh_token_secret_here
-```
-
-### Running the Application
-
-- **Development Mode** (with automatic reload via `nodemon`):
-
-  ```bash
-  npm run dev
-  ```
-
-- **Production Mode**:
-
-  ```bash
-  npm start
-  ```
-
-Once launched, the console will confirm:
-
-```text
-App Started
-Database Connected
-```
-
-The server is available at `http://localhost:5500` (or your configured `PORT`).
+   ```text
+   App Started
+   Database Connected
+   ```
 
 ---
 
 ## Usage Examples
+
+You can test these endpoints against the **Live Production API** (`https://hrms.scoobies.ai/app`) or your **Local Instance** (`http://localhost:5500`).
+
+Set your base URL in your shell:
+
+```bash
+# Target live production server:
+API_URL="https://hrms.scoobies.ai/app"
+
+# Or target local development server:
+# API_URL="http://localhost:5500"
+```
 
 ### 1. Health Check
 
 Verify the API server is operational:
 
 ```bash
-curl -X GET http://localhost:5500/health
+curl -X GET "$API_URL/health"
 ```
 
 **Response (`200 OK`)**:
-
 ```json
 {
   "message": "Server running"
 }
 ```
 
-### 2. User Registration & Login
-
-All `/account/*` endpoints require the `account: <ACCOUNT_ID>` header matching your `.env`.
-
-**Register an Employee**:
-
+Check individual subservice health:
 ```bash
-curl -X POST http://localhost:5500/account/auth/create \
-  -H "Content-Type: application/json" \
-  -H "account: your_account_id_here" \
-  -d '{
-    "name": "Jane Doe",
-    "email": "jane@example.com",
-    "storeId": "651f1f1b2c3d4e5f6a7b8c9d",
-    "password": "SecurePassword123!"
-  }'
+curl -X GET "$API_URL/jwt/health"
 ```
 
-**Authenticate / Login**:
+---
 
-```bash
-curl -X POST http://localhost:5500/account/auth/login \
-  -H "Content-Type: application/json" \
-  -H "account: your_account_id_here" \
-  -d '{
-    "email": "jane@example.com",
-    "password": "SecurePassword123!"
-  }'
-```
+### 2. Store Management
 
-**Response (`200 OK`)**:
-
-```json
-{
-  "status": "Success",
-  "authToken": "eyJhbGciOi...",
-  "refreshToken": "eyJhbGciOi..."
-}
-```
-
-### 3. Token Refresh Flow
-
-When the access token expires, use the refresh token to obtain a fresh token pair:
-
-```bash
-curl -X GET http://localhost:5500/jwt/refresh \
-  -H "authorization: <authToken>" \
-  -H "refresh: <refreshToken>"
-```
-
-### 4. Store Management
+All `/account/*` endpoints require the `account: <ACCOUNT_ID>` header matching your configured account key.
 
 **Create a Store Branch**:
 
 ```bash
-curl -X POST http://localhost:5500/account/store/create \
+curl -X POST "$API_URL/account/store/create" \
   -H "Content-Type: application/json" \
   -H "account: your_account_id_here" \
   -d '{
-    "name": "Downtown Branch",
-    "address": "123 Market St, San Francisco, CA",
+    "name": "Downtown Tech Hub",
+    "address": "100 Innovation Blvd, Suite 400",
     "latitude": "37.7749",
     "longitude": "-122.4194"
   }'
@@ -292,19 +290,99 @@ curl -X POST http://localhost:5500/account/store/create \
 **List All Stores**:
 
 ```bash
-curl -X GET http://localhost:5500/account/store/get \
+curl -X GET "$API_URL/account/store/get" \
   -H "account: your_account_id_here"
 ```
 
 ---
 
-## Support & Help
+### 3. User Registration & Authentication
 
-If you run into issues, need assistance, or want to report a problem:
+**Register an Employee**:
+
+```bash
+curl -X POST "$API_URL/account/auth/create" \
+  -H "Content-Type: application/json" \
+  -H "account: your_account_id_here" \
+  -d '{
+    "name": "Alex Mercer",
+    "email": "alex.mercer@example.com",
+    "storeId": "651f1f1b2c3d4e5f6a7b8c9d",
+    "password": "SuperSecretPassword123!"
+  }'
+```
+
+**Authenticate / Login**:
+
+```bash
+curl -X POST "$API_URL/account/auth/login" \
+  -H "Content-Type: application/json" \
+  -H "account: your_account_id_here" \
+  -d '{
+    "email": "alex.mercer@example.com",
+    "password": "SuperSecretPassword123!"
+  }'
+```
+
+**Response (`200 OK`)**:
+```json
+{
+  "status": "Success",
+  "authToken": "eyJhbGciOi...",
+  "refreshToken": "eyJhbGciOi..."
+}
+```
+
+---
+
+### 4. Dual-Token Refresh Flow
+
+When the access token expires (2-day validity), use the long-lived refresh token (10-day validity) to acquire a fresh token pair:
+
+```bash
+curl -X GET "$API_URL/jwt/refresh" \
+  -H "authorization: <authToken>" \
+  -H "refresh: <refreshToken>"
+```
+
+**Response (`200 OK`)**:
+```json
+{
+  "status": "Success",
+  "authToken": "eyJhbGciOi...",
+  "refreshToken": "eyJhbGciOi..."
+}
+```
+
+---
+
+### 5. Protected Route Access
+
+Endpoints prefixed with `/secure/*` require both `authorization` and `refresh` headers:
+
+```bash
+curl -X GET "$API_URL/secure/verify" \
+  -H "authorization: <authToken>" \
+  -H "refresh: <refreshToken>"
+```
+
+**Response (`200 OK`)**:
+```json
+{
+  "message": "User is valid"
+}
+```
+
+---
+
+## Where Users Can Get Help
+
+If you run into issues, need assistance, or want to report a bug:
 
 - **Issue Tracker**: Submit a bug report or feature proposal on GitHub via [Issues](https://github.com/masanthimanshu/hrms-backend/issues).
-- **Direct Inquiries**: Contact the maintainer directly at [masanthimanshu@gmail.com](mailto:masanthimanshu@gmail.com).
-- **Code Reference**: Inspect the [routes/](routes/) and [database/](database/) directories for entity models and controller logic.
+- **Direct Support**: Contact the project maintainer directly at [masanthimanshu@gmail.com](mailto:masanthimanshu@gmail.com).
+- **Live Status Check**: Validate deployment status anytime at the [Live Health Endpoint](https://hrms.scoobies.ai/app/health).
+- **Documentation**: Consult [CONTRIBUTING.md](CONTRIBUTING.md) for development workflows and standards.
 
 ---
 
@@ -312,13 +390,13 @@ If you run into issues, need assistance, or want to report a problem:
 
 Contributions are welcomed and greatly appreciated!
 
-Please review our [CONTRIBUTING.md](CONTRIBUTING.md) guide for details on code standards, branch naming, ESLint/Prettier checks, and submitting pull requests.
+Please review our [CONTRIBUTING.md](CONTRIBUTING.md) guide for details on coding standards, commit formatting, ESLint verification, and pull request submissions.
 
 1. Fork the project repository.
-2. Create a feature branch (`git checkout -b feature/new-feature`).
-3. Verify linting (`npx eslint .`) and formatting (`npx prettier --write .`).
-4. Commit your changes (`git commit -m 'feat: add feature description'`).
-5. Push to your branch (`git push origin feature/new-feature`).
+2. Create a feature branch (`git checkout -b feature/amazing-feature`).
+3. Verify linting (`npx eslint .`).
+4. Commit your changes (`git commit -m 'feat: add amazing feature'`).
+5. Push to your branch (`git push origin feature/amazing-feature`).
 6. Open a Pull Request.
 
 ---
@@ -331,4 +409,4 @@ Please review our [CONTRIBUTING.md](CONTRIBUTING.md) guide for details on code s
 
 ## License
 
-This project is licensed under the terms of the [ISC License](LICENSE).
+This project is open source and available under the terms of the [ISC License](LICENSE).
