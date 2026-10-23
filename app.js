@@ -25,6 +25,9 @@ app.use("/jwt", route.jwtRoutes);
 app.use("/account/auth", route.authRoutes);
 app.use("/account/store", route.storeRoutes);
 
+app.use("/secure/upload", route.uploadRoutes);
+app.use("/secure/attendance", route.attendanceRoutes);
+
 app.listen(process.env.PORT, () => console.log("App Started"));
 
 connect(mongoUri).then(() => console.log("Database Connected"));

@@ -1,0 +1,56 @@
+import { z } from "zod";
+import { Router } from "express";
+import { Tokens } from "../../utils/tokens.js";
+import { AttendanceController } from "./attendance_controller.js";
+import { attendanceModel } from "../../database/attendance_model.js";
+
+const token = new Tokens();
+export const routes = Router();
+const controller = new AttendanceController();
+
+routes.get("/health", (req, res) => {
+  res.send({ status: "Attendance Service is running" });
+});
+
+routes.get("/today", async (req, res) => {
+  const { authorization } = req.headers;
+  const { authToken } = token.decodeAuth(authorization);
+
+  const date = new Date();
+
+  const startTime = date.setHours(0, 0, 0, 0);
+  const endTime = date.setHours(23, 59, 59, 999);
+
+  const attendanceData = await attendanceModel.find({
+    userId: authToken.id,
+    createdAt: { $gte: startTime, $lte: endTime },
+  });
+
+  res.send({ data: attendanceData });
+});
+
+routes.get("/all", async (req, res) => {
+  const { authorization } = req.headers;
+  const { authToken } = token.decodeAuth(authorization);
+
+  const attendanceData = await attendanceModel.find({ userId: authToken.id });
+  res.send({ data: attendanceData });
+});
+
+routes.post("/add", (req, res) => {
+  const { authorization } = req.headers;
+  const { authToken } = token.decodeAuth(authorization);
+
+  const schema = z.object({
+    latitude: z.string(),
+    imageUrl: z.string(),
+    longitude: z.string(),
+  });
+
+  try {
+    schema.strict().parse(req.body);
+    controller.add(res, { ...req.body, userId: authToken.id });
+  } catch {
+    return res.status(400).send({ error: "Missing required fields" });
+  }
+});

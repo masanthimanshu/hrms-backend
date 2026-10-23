@@ -8,12 +8,12 @@ import {
 
 const s3Client = new S3Client({ profile: "scoobies" });
 
-export async function generateImageUploadUrl(dish) {
+export async function generateImageUploadUrl(text) {
   const key = `images/${randomUUID()}.webp`;
 
   const command = new PutObjectCommand({
     Key: key,
-    Metadata: { dish },
+    Metadata: { text },
     ContentType: "image/webp",
     Bucket: process.env.BUCKET_NAME,
   });
@@ -47,5 +47,5 @@ export async function getImageFromS3(key) {
     chunks.push(chunk);
   }
 
-  return { buffer: Buffer.concat(chunks), dish: response.Metadata?.dish };
+  return { buffer: Buffer.concat(chunks), text: response.Metadata?.text };
 }

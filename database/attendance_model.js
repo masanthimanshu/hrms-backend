@@ -10,6 +10,8 @@ const schema = new Schema(
 
     latitude: { type: String, required: [true, "Latitude is required"] },
     longitude: { type: String, required: [true, "Longitude is required"] },
+
+    distance: { type: String, required: [true, "Distance is required"] },
     imageUrl: { type: String, required: [true, "Image URL is required"] },
   },
   { timestamps: true },

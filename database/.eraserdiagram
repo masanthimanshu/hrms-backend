@@ -14,6 +14,7 @@ attendance [icon: calendar, color: green] {
     userId string fk
     latitude float
     longitude float
+    distance float
     imageUrl string
     timestamp datetime
 }
