@@ -13,33 +13,45 @@ routes.get("/health", (req, res) => {
 });
 
 routes.get("/today", async (req, res) => {
-  const { authorization } = req.headers;
-  const { data } = token.decodeAuth(authorization);
+  try {
+    const { authorization } = req.headers;
+    const { data } = token.decodeAuth(authorization);
+    const userId = data?.uid || data;
 
-  const date = new Date();
+    const startTime = new Date();
+    startTime.setHours(0, 0, 0, 0);
 
-  const startTime = date.setHours(0, 0, 0, 0);
-  const endTime = date.setHours(23, 59, 59, 999);
+    const endTime = new Date();
+    endTime.setHours(23, 59, 59, 999);
 
-  const attendanceData = await attendanceModel.find({
-    userId: data,
-    createdAt: { $gte: startTime, $lte: endTime },
-  });
+    const attendanceData = await attendanceModel.find({
+      userId,
+      createdAt: { $gte: startTime, $lte: endTime },
+    });
 
-  res.send({ data: attendanceData });
+    res.send({ data: attendanceData });
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
 });
 
 routes.get("/all", async (req, res) => {
-  const { authorization } = req.headers;
-  const { data } = token.decodeAuth(authorization);
+  try {
+    const { authorization } = req.headers;
+    const { data } = token.decodeAuth(authorization);
+    const userId = data?.uid || data;
 
-  const attendanceData = await attendanceModel.find({ userId: data });
-  res.send({ data: attendanceData });
+    const attendanceData = await attendanceModel.find({ userId });
+    res.send({ data: attendanceData });
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
 });
 
 routes.post("/add", (req, res) => {
   const { authorization } = req.headers;
   const { data } = token.decodeAuth(authorization);
+  const userId = data?.uid || data;
 
   const schema = z.object({
     latitude: z.string(),
@@ -49,7 +61,7 @@ routes.post("/add", (req, res) => {
 
   try {
     schema.strict().parse(req.body);
-    controller.add(res, { ...req.body, userId: data });
+    controller.add(res, { ...req.body, userId });
   } catch {
     return res.status(400).send({ error: "Missing required fields" });
   }
