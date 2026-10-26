@@ -13,7 +13,7 @@ export class AttendanceController {
       { latitude: storeData.latitude, longitude: storeData.longitude },
     );
 
-    const attendanceData = await attendanceModel.create({ ...data, distance });
-    res.send({ data: attendanceData });
+    await attendanceModel.create({ ...data, distance });
+    res.send({ status: "Attendance added successfully" });
   };
 }

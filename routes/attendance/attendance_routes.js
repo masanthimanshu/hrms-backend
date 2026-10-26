@@ -14,7 +14,7 @@ routes.get("/health", (req, res) => {
 
 routes.get("/today", async (req, res) => {
   const { authorization } = req.headers;
-  const { authToken } = token.decodeAuth(authorization);
+  const { data } = token.decodeAuth(authorization);
 
   const date = new Date();
 
@@ -22,7 +22,7 @@ routes.get("/today", async (req, res) => {
   const endTime = date.setHours(23, 59, 59, 999);
 
   const attendanceData = await attendanceModel.find({
-    userId: authToken.id,
+    userId: data,
     createdAt: { $gte: startTime, $lte: endTime },
   });
 
@@ -31,15 +31,15 @@ routes.get("/today", async (req, res) => {
 
 routes.get("/all", async (req, res) => {
   const { authorization } = req.headers;
-  const { authToken } = token.decodeAuth(authorization);
+  const { data } = token.decodeAuth(authorization);
 
-  const attendanceData = await attendanceModel.find({ userId: authToken.id });
+  const attendanceData = await attendanceModel.find({ userId: data });
   res.send({ data: attendanceData });
 });
 
 routes.post("/add", (req, res) => {
   const { authorization } = req.headers;
-  const { authToken } = token.decodeAuth(authorization);
+  const { data } = token.decodeAuth(authorization);
 
   const schema = z.object({
     latitude: z.string(),
@@ -49,7 +49,7 @@ routes.post("/add", (req, res) => {
 
   try {
     schema.strict().parse(req.body);
-    controller.add(res, { ...req.body, userId: authToken.id });
+    controller.add(res, { ...req.body, userId: data });
   } catch {
     return res.status(400).send({ error: "Missing required fields" });
   }
