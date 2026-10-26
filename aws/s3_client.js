@@ -6,7 +6,13 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 
-const s3Client = new S3Client({ profile: "scoobies" });
+const s3Client = new S3Client({
+  region: "ap-south-1",
+  credentials: {
+    accessKeyId: process.env.AWS_KEY,
+    secretAccessKey: process.env.AWS_SECRET,
+  },
+});
 
 export async function generateImageUploadUrl(text) {
   const key = `images/${randomUUID()}.webp`;
