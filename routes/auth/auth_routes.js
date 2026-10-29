@@ -26,7 +26,7 @@ routes.post("/login", (req, res) => {
     schema.parse(req.body);
     controller.login(res, req.body);
   } catch {
-    return res.status(400).send({ error: "Missing required fields" });
+    res.status(400).send({ error: "Missing required fields" });
   }
 });
 

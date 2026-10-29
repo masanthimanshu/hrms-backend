@@ -24,7 +24,9 @@ app.use("/jwt", route.jwtRoutes);
 
 app.use("/account/auth", route.authRoutes);
 app.use("/account/store", route.storeRoutes);
+app.use("/account/admin", route.adminRoutes);
 
+app.use("/secure/user", route.userRoutes);
 app.use("/secure/upload", route.uploadRoutes);
 app.use("/secure/attendance", route.attendanceRoutes);
 

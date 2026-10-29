@@ -16,6 +16,6 @@ routes.post("/image", async (req, res) => {
     const data = await generateImageUploadUrl(req.body.text);
     res.send({ ...data });
   } catch {
-    return res.status(400).send({ error: "Missing required fields" });
+    res.status(400).send({ error: "Missing required fields" });
   }
 });

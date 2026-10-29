@@ -27,6 +27,6 @@ routes.post("/create", (req, res) => {
     schema.strict().parse(req.body);
     controller.create(res, req.body);
   } catch {
-    return res.status(400).send({ error: "Missing required fields" });
+    res.status(400).send({ error: "Missing required fields" });
   }
 });
