@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { Router } from "express";
-import { hashSync } from "bcrypt";
 import { AuthController } from "./auth_controller.js";
 import { userModel } from "../../database/user_model.js";
 
@@ -36,15 +35,22 @@ routes.post("/create", (req, res) => {
     name: z.string(),
     email: z.string(),
     storeId: z.string(),
-    password: z.string(),
   });
 
   try {
     schema.strict().parse(req.body);
-
-    const hash = hashSync(req.body.password, 15);
-    controller.create(res, { ...req.body, password: hash });
+    controller.create(res, req.body);
   } catch {
     return res.status(400).send({ error: "Missing required fields" });
   }
+});
+
+routes.post("/validate/:uid", async (req, res) => {
+  const user = await userModel.findById(req.params.uid);
+  if (!user) return res.status(404).send({ error: "User not found" });
+
+  user.isValid = !user.isValid;
+  await user.save();
+
+  res.send({ status: `User validation changed` });
 });

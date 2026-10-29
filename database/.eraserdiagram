@@ -7,6 +7,7 @@ user [icon: user, color: blue] {
     password hash
     storeId string
     isVerified boolean
+    timestamp datetime
 }
 
 attendance [icon: calendar, color: green] {
@@ -25,6 +26,7 @@ store [icon: building, color: orange] {
     address string
     latitude float
     longitude float
+    timestamp datetime
 }
 
 user.storeId <> store.id

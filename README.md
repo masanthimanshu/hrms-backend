@@ -2,12 +2,13 @@
 
 [![Node.js Version](https://img.shields.io/badge/Node.js-v24+-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://mongoosejs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%209.x-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://mongoosejs.com/)
 [![AWS S3](https://img.shields.io/badge/AWS-S3%20Presigned-FF9900?style=flat-square&logo=amazons3&logoColor=white)](https://aws.amazon.com/s3/)
+[![Email](https://img.shields.io/badge/Email-Resend-black?style=flat-square&logo=resend&logoColor=white)](https://resend.com/)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg?style=flat-square)](https://opensource.org/licenses/ISC)
-[![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](./Dockerfile)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](compose.yaml)
 
-A modular, cloud-ready RESTful backend service for Human Resource Management Systems (HRMS). It delivers employee onboarding, multi-store location management, dual-token JWT authentication, AWS S3 presigned asset uploads, and geofenced attendance verification with automated distance calculation.
+A lightweight, modular, and cloud-ready REST API backend for Human Resource Management Systems (HRMS). Built with Node.js and Express 5, this service provides store location administration, employee lifecycle onboarding with automated credential dispatch, geofenced attendance tracking with GPS distance calculation, direct-to-S3 presigned image uploads, and dual-token JWT authentication.
 
 ---
 
@@ -15,81 +16,85 @@ A modular, cloud-ready RESTful backend service for Human Resource Management Sys
 
 - [What the Project Does](#what-the-project-does)
 - [Why the Project Is Useful](#why-the-project-is-useful)
-- [System Architecture](#system-architecture)
-  - [Directory Structure](#directory-structure)
-  - [Data Model](#data-model)
+- [Architecture & Data Model](#architecture--data-model)
+  - [Project Structure](#project-structure)
+  - [Entity Relationship Diagram](#entity-relationship-diagram)
 - [How Users Can Get Started](#how-users-can-get-started)
   - [Prerequisites](#prerequisites)
-  - [Installation & Setup](#installation--setup)
+  - [Installation](#installation)
   - [Environment Configuration](#environment-configuration)
-  - [Running the Application](#running-the-application)
+  - [Running the Service](#running-the-service)
   - [Running with Docker](#running-with-docker)
-- [API Overview & Usage](#api-overview--usage)
-  - [Security Headers](#security-headers)
-  - [Endpoints Summary](#endpoints-summary)
-  - [Quick Usage Workflow](#quick-usage-workflow)
+- [API Overview & Usage Examples](#api-overview--usage-examples)
+  - [Authentication & Header Requirements](#authentication--header-requirements)
+  - [Route Endpoints](#route-endpoints)
+  - [End-to-End Workflow Example](#end-to-end-workflow-example)
 - [Where Users Can Get Help](#where-users-can-get-help)
-- [Who Maintains & Contributes](#who-maintains--contributes)
+- [Who Maintains and Contributes](#who-maintains-and-contributes)
 - [License](#license)
 
 ---
 
 ## What the Project Does
 
-The **HRMS Backend** serves as the core API engine for enterprise workforce operations. It enables organizations to:
+The **HRMS Backend** serves as the core API service powering organizational workforce management. It manages:
 
-- **Manage Store Locations:** Register physical store and office premises with precise GPS coordinates.
-- **Administer User & Staff Accounts:** Securely register employees, assign them to designated store locations, and manage access credentials.
-- **Geofence Attendance Verification:** Record employee clock-in events with real-time GPS coordinates, automatically calculating geographic distance against the assigned store location to confirm physical presence.
-- **Handle Direct-to-Cloud Uploads:** Generate short-lived presigned AWS S3 URLs for uploading employee verification selfies and attendance assets directly from the client without routing heavy binary payloads through the application server.
-- **Secure API Traffic:** Protect administrative operations with account ID validation and secure employee endpoints with dual-token JWT authentication (access & refresh tokens).
+- **Store & Workplace Locations**: Create and manage physical branch and office locations mapped with precise GPS coordinates (latitude and longitude).
+- **Employee Onboarding & Account Lifecycle**: Register employees linked to specific stores. Passwords are automatically generated securely using cryptographic random bytes and emailed to new hires via Resend with customizable HTML email templates.
+- **Account Validation & Activation**: Administrative toggle endpoint (`/account/auth/validate/:uid`) to activate or suspend employee accounts.
+- **Geofenced Attendance Verification**: Record clock-in events accompanied by verification photos and client GPS coordinates. The service automatically calculates the distance (in meters) between the user and their assigned store using the Haversine formula via `geolib`.
+- **Direct S3 Asset Uploads**: Issue short-lived presigned AWS S3 `PUT` URLs so mobile/web clients can upload verification images directly to Amazon S3 without saturating backend bandwidth.
+- **Dual-Token Authentication**: Secure session management featuring 2-day access tokens, 10-day refresh tokens, and dedicated refresh endpoints.
 
 ---
 
 ## Why the Project Is Useful
 
-- **Accurate Geofenced Attendance:** Leverages [`geolib`](https://github.com/manuelbieh/geolib) to compute the exact distance (in meters) between employee coordinates and assigned store locations, preventing proxy attendance and check-in fraud.
-- **Optimized Asset Pipeline:** Generates temporary presigned S3 upload URLs (`@aws-sdk/s3-request-presigner`), eliminating server bandwidth bottlenecks during shift-change rush hours.
-- **Dual-Token Authentication Lifecycle:** Employs short-lived authorization tokens (2-day validity) and long-lived refresh tokens (10-day validity) with a dedicated refresh endpoint to ensure high security and seamless session renewals.
-- **Strict Payload Validation:** Uses [`zod`](https://zod.dev/) schemas to enforce strict input validation across all write endpoints, rejecting malformed requests before processing.
-- **Lightweight & Container Ready:** Built on Node.js ES Modules with Express 5 and comes with a production-ready multi-stage [Dockerfile](./Dockerfile).
+- **Eliminates Attendance Fraud**: By calculating real-time geographic distance between check-in coordinates and assigned store locations, organizations can enforce strict geofencing policies.
+- **Zero-Bottleneck Media Pipeline**: Generating presigned AWS S3 URLs delegates heavy image upload workloads directly to AWS object storage, keeping application memory and bandwidth consumption minimal during peak shift check-in times.
+- **Automated Credential Delivery**: Generates cryptographically secure temporary passwords and dispatches branded onboarding emails out-of-the-box using the Resend API and [email_template.html](email_template.html).
+- **Robust Multi-Layered Security**: Segregates sensitive administration endpoints behind an `account` header guard while protecting employee operations with dual-token JWT verification.
+- **Strict Payload Validation**: Every write request is guarded by strict [Zod](https://zod.dev/) schemas to ensure request integrity and eliminate unhandled runtime exceptions.
+- **Docker-Ready Deployment**: Includes container definitions ([Dockerfile](Dockerfile)) and Docker Compose ([compose.yaml](compose.yaml)) for one-command local orchestration or cloud deployments.
 
 ---
 
-## System Architecture
+## Architecture & Data Model
 
-### Directory Structure
+### Project Structure
 
 ```plaintext
 hrms-backend/
 ├── app.js                   # Application entry point, middleware & route mounting
-├── package.json             # Dependencies and npm scripts
+├── package.json             # Project dependencies and lifecycle scripts
 ├── Dockerfile               # Node 24 container definition
+├── compose.yaml             # Docker Compose orchestration config
 ├── .env.example             # Template for required environment variables
+├── email_template.html      # Responsive onboarding email template
 ├── aws/
-│   └── s3_client.js         # AWS S3 presigned URL generation and client utilities
+│   └── s3_client.js         # AWS S3 client and presigned URL helpers
 ├── database/
-│   ├── user_model.js        # User schema (credentials, store relationship)
-│   ├── store_model.js       # Store schema (GPS coordinates, address)
-│   └── attendance_model.js  # Attendance schema (coordinates, distance, image)
+│   ├── attendance_model.js  # Mongoose model for attendance records
+│   ├── store_model.js       # Mongoose model for physical stores
+│   └── user_model.js        # Mongoose model for users and store associations
 ├── routes/
-│   ├── export.js            # Centralized router exports
-│   ├── auth/                # User registration, login, and query endpoints
-│   ├── store/               # Store registration and retrieval endpoints
-│   ├── attendance/          # Geofenced check-in and attendance history
-│   ├── upload/              # Presigned S3 image upload endpoint
-│   └── jwt/                 # Token refresh and verification endpoints
+│   ├── export.js            # Centralized export aggregator for route modules
+│   ├── attendance/          # Attendance check-in and history endpoints
+│   ├── auth/                # User login, registration, validation & listing
+│   ├── jwt/                 # JWT token renewal endpoints
+│   ├── store/               # Store registration and retrieval
+│   └── upload/              # Presigned S3 image upload URL generation
 └── utils/
-    ├── middleware.js        # Header-based auth & account verification middlewares
-    └── tokens.js            # JWT signing, decoding, and verification helpers
+    ├── middleware.js        # JWT and administrative account validation middleware
+    └── tokens.js            # JWT signing, decoding, and verification utility
 ```
 
-### Data Model
+### Entity Relationship Diagram
 
 ```mermaid
 erDiagram
     STORE ||--o{ USER : "employs"
-    USER ||--o{ ATTENDANCE : "submits"
+    USER ||--o{ ATTENDANCE : "logs"
 
     STORE {
         ObjectId _id PK
@@ -108,6 +113,8 @@ erDiagram
         string email
         string password
         boolean isValid
+        datetime createdAt
+        datetime updatedAt
     }
 
     ATTENDANCE {
@@ -128,14 +135,16 @@ erDiagram
 
 ### Prerequisites
 
-Ensure you have the following installed and configured before running the service:
+Ensure you have the following installed on your machine:
 
-- [Node.js](https://nodejs.org/) (v20 or higher; v24 recommended)
-- [npm](https://www.npmjs.com/) (v10 or higher)
-- [MongoDB](https://www.mongodb.com/) (v6+ running locally or a hosted Atlas URI)
-- [AWS Account](https://aws.amazon.com/) with an active S3 bucket and configured IAM credentials (`~/.aws/credentials`)
+- **Node.js** >= 24.0.0
+- **npm** >= 10.0.0
+- **MongoDB** instance (local server or [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- **AWS Account** with an active S3 bucket and IAM credentials
+- **Resend Account** with an active API key for sending onboarding emails
+- _(Optional)_ **Docker** & **Docker Compose**
 
-### Installation & Setup
+### Installation
 
 1. **Clone the repository:**
 
@@ -144,130 +153,123 @@ Ensure you have the following installed and configured before running the servic
    cd hrms-backend
    ```
 
-2. **Install project dependencies:**
-
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-3. **Configure Environment Variables:**
-
-   Copy the sample environment file to create your local `.env`:
-
-   ```bash
-   cp .env.example .env
-   ```
-
 ### Environment Configuration
 
-Configure the `.env` file with your specific credentials:
-
-| Variable               | Required | Description                                                          | Example                                    |
-| :--------------------- | :------: | :------------------------------------------------------------------- | :----------------------------------------- |
-| `PORT`                 |   Yes    | HTTP port on which the Express server listens                        | `5500`                                     |
-| `DB_URL`               |   Yes    | MongoDB connection URI (`authSource=admin` appended automatically)   | `mongodb://root:pass@localhost:27017/hrms` |
-| `ACCOUNT_ID`           |   Yes    | Secret master identifier used for administrative `/account/*` routes | `your-secure-account-key`                  |
-| `AUTH_TOKEN_SECRET`    |   Yes    | Secret key used to sign and verify short-lived JWT access tokens     | `your-auth-secret`                         |
-| `REFRESH_TOKEN_SECRET` |   Yes    | Secret key used to sign and verify long-lived JWT refresh tokens     | `your-refresh-secret`                      |
-| `BUCKET_NAME`          |   Yes    | AWS S3 bucket name designated for attendance selfie/asset uploads    | `hrms-attendance-assets`                   |
-
-> [!NOTE]
-> AWS SDK credentials are loaded via the default AWS credential provider chain or your named AWS profile (`scoobies` by default in `aws/s3_client.js`). Ensure standard AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`) are set in your environment if not using named local profiles.
-
-### Running the Application
-
-- **Development mode (with auto-reload via `nodemon`):**
-
-  ```bash
-  npm run dev
-  ```
-
-- **Production mode:**
-
-  ```bash
-  npm start
-  ```
-
-Once running, verify connectivity with the public health check endpoint:
+Copy the example environment configuration file:
 
 ```bash
-curl http://localhost:5500/health
-# Response: {"message":"Server running"}
+cp .env.example .env
+```
+
+Open `.env` and fill in the required environment variables:
+
+| Variable               | Description                                                            | Example                                    |
+| :--------------------- | :--------------------------------------------------------------------- | :----------------------------------------- |
+| `PORT`                 | Port number on which the Express server listens                        | `5500`                                     |
+| `DB_URL`               | MongoDB connection URI (without database query parameters)             | `mongodb://localhost:27017/hrms`           |
+| `ACCOUNT_ID`           | Administrative account secret checked by account middleware            | `adm_secret_key_99`                        |
+| `AUTH_TOKEN_SECRET`    | Secret key used to sign and verify short-lived JWT access tokens       | `your-auth-secret`                         |
+| `REFRESH_TOKEN_SECRET` | Secret key used to sign and verify long-lived JWT refresh tokens       | `your-refresh-secret`                      |
+| `AWS_KEY`              | AWS IAM Access Key ID with `s3:PutObject` & `s3:GetObject` permissions | `AKIAIOSFODNN7EXAMPLE`                     |
+| `AWS_SECRET`           | AWS IAM Secret Access Key                                              | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
+| `BUCKET_NAME`          | AWS S3 Bucket designated for verification assets                       | `hrms-attendance-bucket`                   |
+| `RESEND_API_KEY`       | API Key from Resend for sending onboarding credential emails           | `re_1234567890abcdef`                      |
+
+### Running the Service
+
+#### Development Mode (with hot-reload)
+
+```bash
+npm run dev
+```
+
+#### Production Mode
+
+```bash
+npm start
+```
+
+#### Run Code Linter
+
+```bash
+npx eslint .
 ```
 
 ### Running with Docker
 
-Build and run the application inside a container:
+You can run the entire backend using Docker and Docker Compose:
 
-1. **Build the Docker image:**
+```bash
+# Build and start container in detached mode
+docker compose up -d --build
 
-   ```bash
-   docker build -t hrms-backend .
-   ```
+# View real-time container logs
+docker compose logs -f
 
-2. **Run the container:**
+# Stop and remove containers
+docker compose down
+```
 
-   ```bash
-   docker run -d \
-     --name hrms-backend-service \
-     -p 5500:5500 \
-     --env-file .env \
-     hrms-backend
-   ```
+The server will be reachable at `http://localhost:5500`.
 
 ---
 
-## API Overview & Usage
+## API Overview & Usage Examples
 
-### Security Headers
+### Authentication & Header Requirements
 
-The API implements two middleware gates:
+The API classifies routes under three distinct security contexts:
 
-1. **Account Gate (`/account/*`):** Requires the `account` header matching `ACCOUNT_ID`.
-   ```http
-   account: <ACCOUNT_ID>
-   ```
-2. **Secure Gate (`/secure/*`):** Requires valid JWT authorization and refresh tokens in request headers.
-   ```http
-   authorization: <authToken>
-   refresh: <refreshToken>
-   ```
+1. **Public Routes** (`/health`, `/jwt/refresh`): Require standard HTTP headers.
+2. **Account Protected Routes** (`/account/*`): Require the administrative header:
+   - `account: <ACCOUNT_ID>`
+3. **Secure Employee Routes** (`/secure/*`): Require dual JWT headers:
+   - `authorization: <AUTH_TOKEN>`
+   - `refresh: <REFRESH_TOKEN>`
 
-### Endpoints Summary
+### Route Endpoints
 
-| Method | Endpoint                    | Protection | Description                                                            |
-| :----- | :-------------------------- | :--------: | :--------------------------------------------------------------------- |
-| `GET`  | `/health`                   |   Public   | Overall API service health check                                       |
-| `GET`  | `/jwt/health`               |   Public   | JWT service health check                                               |
-| `GET`  | `/jwt/refresh`              |   Tokens   | Rotates and issues new `authToken` & `refreshToken`                    |
-| `GET`  | `/account/auth/health`      |  Account   | Auth service health check                                              |
-| `POST` | `/account/auth/create`      |  Account   | Registers a new employee assigned to a `storeId`                       |
-| `POST` | `/account/auth/login`       |  Account   | Authenticates employee credentials and returns JWT tokens              |
-| `GET`  | `/account/auth/users`       |  Account   | Retrieves a list of all registered users (excluding password hashes)   |
-| `GET`  | `/account/store/health`     |  Account   | Store service health check                                             |
-| `POST` | `/account/store/create`     |  Account   | Creates a new physical store location with GPS coordinates             |
-| `GET`  | `/account/store/get`        |  Account   | Retrieves all configured store locations                               |
-| `GET`  | `/secure/verify`            |   Secure   | Validates that current session tokens are active                       |
-| `GET`  | `/secure/upload/health`     |   Secure   | Upload service health check                                            |
-| `POST` | `/secure/upload/image`      |   Secure   | Requests a signed AWS S3 `uploadUrl` and key for image uploads         |
-| `GET`  | `/secure/attendance/health` |   Secure   | Attendance service health check                                        |
-| `POST` | `/secure/attendance/add`    |   Secure   | Submits employee check-in, calculates store distance, and saves record |
-| `GET`  | `/secure/attendance/today`  |   Secure   | Fetches attendance logs recorded today for the authenticated user      |
-| `GET`  | `/secure/attendance/all`    |   Secure   | Fetches all historical attendance records for the authenticated user   |
+| Method | Endpoint                      | Protection      | Description                                                  |
+| :----- | :---------------------------- | :-------------- | :----------------------------------------------------------- |
+| `GET`  | `/health`                     | Public          | Root service health check                                    |
+| `GET`  | `/jwt/health`                 | Public          | JWT service health check                                     |
+| `GET`  | `/jwt/refresh`                | Public / Tokens | Exchanges a valid `refresh` token for a new token pair       |
+| `GET`  | `/account/store/health`       | Account Guard   | Store service health check                                   |
+| `POST` | `/account/store/create`       | Account Guard   | Registers a new physical store location                      |
+| `GET`  | `/account/store/get`          | Account Guard   | Lists all registered store locations                         |
+| `GET`  | `/account/auth/health`        | Account Guard   | Auth service health check                                    |
+| `GET`  | `/account/auth/users`         | Account Guard   | Lists all employees (excluding password hashes)              |
+| `POST` | `/account/auth/create`        | Account Guard   | Registers an employee, generates password & sends email      |
+| `POST` | `/account/auth/validate/:uid` | Account Guard   | Toggles employee active state (`isValid`)                    |
+| `POST` | `/account/auth/login`         | Account Guard   | Authenticates employee credentials and returns JWT pair      |
+| `GET`  | `/secure/verify`              | Secure (JWT)    | Validates active session tokens                              |
+| `GET`  | `/secure/upload/health`       | Secure (JWT)    | Upload service health check                                  |
+| `POST` | `/secure/upload/image`        | Secure (JWT)    | Generates a 5-minute AWS S3 presigned upload URL             |
+| `GET`  | `/secure/attendance/health`   | Secure (JWT)    | Attendance service health check                              |
+| `POST` | `/secure/attendance/add`      | Secure (JWT)    | Submits check-in, computes distance to store, records log    |
+| `GET`  | `/secure/attendance/today`    | Secure (JWT)    | Retrieves today's attendance logs for the authenticated user |
+| `GET`  | `/secure/attendance/all`      | Secure (JWT)    | Retrieves complete attendance history for authenticated user |
 
-### Quick Usage Workflow
+---
 
-#### 1. Create a Store Location
+### End-to-End Workflow Example
+
+#### 1. Register a Store
 
 ```bash
 curl -X POST http://localhost:5500/account/store/create \
   -H "Content-Type: application/json" \
-  -H "account: <ACCOUNT_ID>" \
+  -H "account: your-admin-account-id" \
   -d '{
-    "name": "Central Plaza Flagship",
-    "address": "123 Market Street, Suite 400",
-    "latitude": "28.6139",
-    "longitude": "77.2090"
+    "name": "Downtown HQ",
+    "address": "456 Market Street, New York, NY",
+    "latitude": "40.7128",
+    "longitude": "-74.0060"
   }'
 ```
 
@@ -276,38 +278,50 @@ curl -X POST http://localhost:5500/account/store/create \
 ```bash
 curl -X POST http://localhost:5500/account/auth/create \
   -H "Content-Type: application/json" \
-  -H "account: <ACCOUNT_ID>" \
+  -H "account: your-admin-account-id" \
   -d '{
-    "name": "Jane Doe",
-    "email": "jane.doe@example.com",
-    "password": "StrongPassword123!",
-    "storeId": "<STORE_OBJECT_ID>"
+    "name": "Alex Johnson",
+    "email": "alex.johnson@example.com",
+    "storeId": "653b8f1c9d2e1a0012345678"
   }'
 ```
 
-#### 3. Employee Login
+_A secure random password is generated and sent directly to the employee's email address._
+
+#### 3. Activate the Employee Account
+
+Newly created employees start with `isValid: false`. Activate the user via their User ID:
+
+```bash
+curl -X POST http://localhost:5500/account/auth/validate/653b8f1c9d2e1a0012345679 \
+  -H "account: your-admin-account-id"
+```
+
+#### 4. Employee Login
 
 ```bash
 curl -X POST http://localhost:5500/account/auth/login \
   -H "Content-Type: application/json" \
-  -H "account: <ACCOUNT_ID>" \
+  -H "account: your-admin-account-id" \
   -d '{
-    "email": "jane.doe@example.com",
-    "password": "StrongPassword123!"
+    "email": "alex.johnson@example.com",
+    "password": "<PASSWORD_RECEIVED_VIA_EMAIL>"
   }'
 ```
 
-Response:
+Sample JSON response:
 
 ```json
 {
   "status": "Success",
-  "authToken": "eyJhbGciOi...",
-  "refreshToken": "eyJhbGciOi..."
+  "authToken": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
 }
 ```
 
-#### 4. Request S3 Image Upload URL
+#### 5. Generate Presigned URL & Upload Verification Photo
+
+Request the presigned upload URL:
 
 ```bash
 curl -X POST http://localhost:5500/secure/upload/image \
@@ -315,11 +329,20 @@ curl -X POST http://localhost:5500/secure/upload/image \
   -H "authorization: <AUTH_TOKEN>" \
   -H "refresh: <REFRESH_TOKEN>" \
   -d '{
-    "text": "Check-in selfie metadata"
+    "text": "Morning Shift Check-in"
   }'
 ```
 
-Upload the image directly to S3 via HTTP `PUT` using the returned `uploadUrl`:
+Response contains the S3 signed URL and key:
+
+```json
+{
+  "uploadUrl": "https://hrms-attendance-bucket.s3.ap-south-1.amazonaws.com/images/4a7e9...webp?X-Amz-...",
+  "key": "images/4a7e9b0e-6f91-4c17-a9a3-5c26b91c1072.webp"
+}
+```
+
+Upload the image directly to S3 via HTTP PUT:
 
 ```bash
 curl -X PUT "<UPLOAD_URL>" \
@@ -327,7 +350,7 @@ curl -X PUT "<UPLOAD_URL>" \
   --data-binary "@selfie.webp"
 ```
 
-#### 5. Submit Attendance Check-In
+#### 6. Record Attendance Check-In
 
 ```bash
 curl -X POST http://localhost:5500/secure/attendance/add \
@@ -335,43 +358,43 @@ curl -X POST http://localhost:5500/secure/attendance/add \
   -H "authorization: <AUTH_TOKEN>" \
   -H "refresh: <REFRESH_TOKEN>" \
   -d '{
-    "latitude": "28.6140",
-    "longitude": "77.2092",
-    "imageUrl": "images/uuid-key.webp"
+    "latitude": "40.7130",
+    "longitude": "-74.0062",
+    "imageUrl": "images/4a7e9b0e-6f91-4c17-a9a3-5c26b91c1072.webp"
   }'
 ```
 
-The system automatically resolves the employee's assigned store coordinates, calculates the distance (in meters) using the Haversine formula via `geolib`, and records the attendance entry.
+_The server computes the distance in meters between the employee's check-in coordinates and their assigned store coordinates, persisting the record in MongoDB._
 
 ---
 
 ## Where Users Can Get Help
 
-- **Issue Tracker:** Report bugs, request enhancements, or ask questions via [GitHub Issues](https://github.com/masanthimanshu/hrms-backend/issues).
-- **Discussions & Support:** Open a topic under GitHub Discussions or contact the project maintainers.
-- **Documentation:** Review inline code comments and controller definitions across the [`routes/`](./routes/) and [`utils/`](./utils/) modules.
+- **Issue Tracker**: Submit bug reports and feature requests via [GitHub Issues](https://github.com/masanthimanshu/hrms-backend/issues).
+- **Discussions & Support**: Open a question or topic on [GitHub Discussions](https://github.com/masanthimanshu/hrms-backend/discussions).
+- **Code Reference**: Check implementation details directly in [routes/](routes/) and [utils/](utils/).
 
 ---
 
-## Who Maintains & Contributes
+## Who Maintains and Contributes
 
 ### Maintainer
 
-Developed and maintained by [Himanshu Masant](https://github.com/masanthimanshu) and project contributors.
+Developed and maintained by **[Himanshu Masant](https://github.com/masanthimanshu)**.
 
 ### Contributing
 
-Contributions, bug reports, and pull requests are welcome! To contribute:
+Contributions are welcomed. To contribute:
 
 1. Fork the repository.
-2. Create a feature branch: `git checkout -b feature/amazing-feature`.
-3. Commit your changes following clean commit guidelines: `git commit -m 'feat: add amazing feature'`.
-4. Ensure code formatting and linting pass (`npx eslint .`).
-5. Push to the branch: `git push origin feature/amazing-feature`.
-6. Open a Pull Request detailing your changes.
+2. Create your feature branch: `git checkout -b feature/your-feature-name`.
+3. Verify your changes adhere to code style guidelines: `npx eslint .`.
+4. Commit your changes: `git commit -m 'feat: add support for custom geofence radius'`.
+5. Push your branch: `git push origin feature/your-feature-name`.
+6. Submit a Pull Request describing your changes.
 
 ---
 
 ## License
 
-This project is licensed under the [ISC License](https://opensource.org/licenses/ISC). See the `package.json` file for details.
+This project is licensed under the [ISC License](https://opensource.org/licenses/ISC). See the [package.json](package.json) file for details.
