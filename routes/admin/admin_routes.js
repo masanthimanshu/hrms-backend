@@ -27,12 +27,24 @@ routes.get("/attendance", async (req, res) => {
   const { authorization } = req.headers;
   const { data } = token.decodeAuth(authorization);
 
-  const user = data?.user || data;
-
-  if (user !== "admin") {
-    return res.status(401).send({ message: "Invalid user" });
+  if (data.user !== "admin") {
+    return res.status(401).send({ message: "Invalid token" });
   }
 
   const allAttendance = await attendanceModel.find({});
   res.send({ data: allAttendance });
+});
+
+routes.get("/attendance/:uid", async (req, res) => {
+  const { authorization } = req.headers;
+  const { data } = token.decodeAuth(authorization);
+
+  if (data.user !== "admin") {
+    return res.status(401).send({ message: "Invalid token" });
+  }
+
+  const { uid } = req.params;
+  const attendance = await attendanceModel.find({ userId: uid });
+
+  res.send({ data: attendance });
 });
