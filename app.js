@@ -4,14 +4,28 @@ import cors from "cors";
 import express from "express";
 import { connect } from "mongoose";
 import * as route from "./routes/export.js";
+import { rateLimit } from "express-rate-limit";
 import { Middleware } from "./utils/middleware.js";
 
 const mongoUri = `${process.env.DB_URL}?authSource=admin`;
+
+const limiter = rateLimit({
+  limit: 50,
+  legacyHeaders: false,
+  windowMs: 5 * 60 * 1000,
+  standardHeaders: "draft-8",
+  message: {
+    status: 429,
+    error: "Too many requests",
+    message: "You have exceeded the request limit.",
+  },
+});
 
 const app = express();
 const middleware = new Middleware();
 
 app.use(cors());
+app.use(limiter);
 app.use(express.json());
 
 app.use("/secure", middleware.jwt);

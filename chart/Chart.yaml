@@ -1,0 +1,4 @@
+apiVersion: v2
+name: hrms-backend
+version: 1.0.0
+

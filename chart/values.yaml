@@ -1,0 +1,21 @@
+# --- Container Image ---
+image:
+  repository: ""
+  tag: "latest"
+
+# --- Networking ---
+port: 5500
+
+# --- Environment Variables ---
+env:
+  PORT: "5500"
+  DB_URL: "mongodb://root:scoobies@13.235.247.169:8000/hrms"
+
+# --- Resource Allocations (EKS Fargate compatible) ---
+resources:
+  requests:
+    cpu: 256m
+    memory: 512Mi
+  limits:
+    cpu: 512m
+    memory: 1024Mi
