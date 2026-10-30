@@ -2,10 +2,10 @@
 set -eo pipefail
 
 # --- Configuration ---
+APP="hrms-backend"
 REGION="ap-south-1"
 PROFILE="eks-fargate-user"
 CLUSTER="hrms-backend-cluster"
-APP="hrms-backend"
 
 # --- Error Handling ---
 trap 'echo -e "\n❌ [ERROR] Deployment failed at line $LINENO. Review the error above."' ERR
@@ -26,6 +26,7 @@ aws eks update-kubeconfig --name "$CLUSTER" --region "$REGION" --profile "$PROFI
 echo "🔧 Ensuring CoreDNS runs on Fargate..."
 kubectl patch deployment coredns -n kube-system --type json \
   -p='[{"op": "remove", "path": "/spec/template/metadata/annotations/eks.amazonaws.com~1compute-type"}]' 2>/dev/null || true
+kubectl rollout restart deployment coredns -n kube-system >/dev/null 2>&1 || true
 
 # --- 3. Terraform Outputs ---
 echo "📦 [3/6] Reading Terraform outputs..."
@@ -40,7 +41,7 @@ fi
 
 # --- 4. AWS Load Balancer Controller ---
 echo "☸️  [4/6] Installing/Updating AWS Load Balancer Controller..."
-helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+helm upgrade --install aws-load-balancer-controller aws-load-balancer-controller \
   --repo https://aws.github.io/eks-charts -n kube-system \
   --set clusterName="$CLUSTER" \
   --set region="$REGION" \
@@ -69,7 +70,7 @@ while [ -z "$LB" ]; do
   sleep 5
   WAIT_COUNT=$((WAIT_COUNT + 1))
   LB=$(kubectl get svc "$APP" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
-  if [ $WAIT_COUNT -gt 36 ]; then # 3 minutes timeout
+  if [ $WAIT_COUNT -gt 60 ]; then # 5 minutes timeout
     echo "⚠️ Warning: Load balancer DNS is taking longer than expected. Check status with: kubectl get svc $APP"
     break
   fi
