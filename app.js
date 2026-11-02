@@ -10,7 +10,7 @@ import { Middleware } from "./utils/middleware.js";
 const mongoUri = `${process.env.DB_URL}?authSource=admin`;
 
 const limiter = rateLimit({
-  limit: 50,
+  limit: 500,
   legacyHeaders: false,
   windowMs: 5 * 60 * 1000,
   standardHeaders: "draft-8",
