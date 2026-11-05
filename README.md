@@ -1,5 +1,6 @@
 # HRMS Backend
 
+[![Version](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square)](package.json)
 [![Node.js Version](https://img.shields.io/badge/Node.js-v24+-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-5.x-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%209.x-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://mongoosejs.com/)
@@ -9,7 +10,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](compose.yaml)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg?style=flat-square)](LICENSE)
 
-A modern, cloud-native REST API backend for Human Resource Management Systems (HRMS). Built with Node.js and Express 5, this service provides store location administration, employee lifecycle onboarding with automated credential dispatch via email, geofenced attendance tracking with real-time GPS distance calculation, direct-to-S3 presigned image uploads, and dual-token JWT authentication.
+A modern, cloud-native REST API backend for Human Resource Management Systems (HRMS). Built with Node.js and Express 5, this service provides store location administration, employee lifecycle onboarding with automated credential dispatch via email, geofenced attendance tracking with real-time GPS distance calculation, employee location history logging, direct-to-S3 presigned image uploads, and dual-token JWT authentication.
 
 ---
 
@@ -28,12 +29,14 @@ A modern, cloud-native REST API backend for Human Resource Management Systems (H
   - [Running the Application](#running-the-application)
   - [Running with Docker](#running-with-docker)
   - [Cloud Deployment (AWS EKS & Terraform)](#cloud-deployment-aws-eks--terraform)
-- [API Overview & Quickstart Usage](#api-overview--quickstart-usage)
-  - [Security & Authentication Guards](#security--authentication-guards)
-  - [Endpoint Summary](#endpoint-summary)
-  - [Quickstart Workflow Examples](#quickstart-workflow-examples)
+  - [API Overview & Quickstart Usage](#api-overview--quickstart-usage)
+    - [Security & Authentication Guards](#security--authentication-guards)
+    - [Endpoint Summary](#endpoint-summary)
+    - [Quickstart Workflow Examples](#quickstart-workflow-examples)
 - [Where Users Can Get Help](#where-users-can-get-help)
 - [Who Maintains and Contributes](#who-maintains-and-contributes)
+  - [Maintainer](#maintainer)
+  - [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -46,7 +49,7 @@ The **HRMS Backend** serves as the core operational service powering workforce a
 - **Automated Employee Onboarding**: Provision user profiles assigned to specific stores. The system generates secure, cryptographically random temporary credentials and dispatches a welcome email with custom HTML branding via Resend.
 - **Account Verification Lifecycle**: Administrative toggle (`isValid`) to verify and authorize employee accounts before allowing system access.
 - **Geofenced Attendance Verification**: Record clock-ins with live GPS coordinates and verification selfies. Checks the distance in meters between the employee and their assigned store using the Haversine formula (`geolib`).
-- **Live Distance Calculation**: On-demand distance endpoint enabling client apps to calculate proximity to the designated store before check-in.
+- **Live Distance & Location Tracking**: On-demand distance calculation to check proximity to designated stores, plus dedicated GPS breadcrumb logging for mobile workforce monitoring.
 - **Presigned Direct-to-S3 Media Uploads**: Generates short-lived AWS S3 presigned URLs, allowing client apps to upload verification photos directly to S3 without sending heavy binary data through the API server.
 - **Dual-Token Authentication**: Secure authentication flow with 2-day access tokens and 10-day refresh tokens with automated session refresh.
 - **Administrative Portal & Oversight**: Admin authentication and organization-wide attendance log auditing across all users or filtered by individual employee ID.
@@ -59,8 +62,8 @@ The **HRMS Backend** serves as the core operational service powering workforce a
 - **Zero-Bottleneck Media Pipeline**: Direct-to-S3 presigned image uploads offload heavy media processing from Node.js, keeping API memory footprints minimal and check-in latency low during peak shift hours.
 - **Frictionless Onboarding**: Automates credential generation and email delivery, eliminating manual password resets during initial team setup.
 - **Layered Security Architecture**: Strict header separation protects administrative provisioning endpoints (`account` header) while client sessions use dual JWT tokens (`authorization` and `refresh` headers).
-- **Built-in Rate Limiting**: Global request limiting (50 requests per 5-minute window) protects backend resources against abuse.
-- **Cloud-Native & Production-Ready**: Preconfigured with Docker, Docker Compose, Terraform IaC (`deploy/`), Helm charts (`chart/`), and an automated AWS EKS deployment pipeline (`deploy.sh`).
+- **Built-in Rate Limiting**: Global request limiting (500 requests per 5-minute window) protects backend resources against abuse.
+- **Cloud-Native & Production-Ready**: Preconfigured with Docker, Docker Compose, Terraform IaC ([deploy/](deploy/)), Helm charts ([chart/](chart/)), and an automated AWS EKS deployment pipeline ([deploy.sh](deploy.sh)).
 
 ---
 
@@ -81,6 +84,7 @@ flowchart TD
         AuthModule["Auth & Admin Controller"]
         StoreModule["Store Management"]
         AttendanceModule["Attendance & Geofencing"]
+        LocationModule["Location Tracking"]
         UploadModule["S3 Presigner"]
     end
 
@@ -91,18 +95,19 @@ flowchart TD
     end
 
     Client -->|X-Account-ID| AccountGuard --> AuthModule & StoreModule
-    Client -->|Bearer & Refresh Tokens| JWTGuard --> AttendanceModule & UploadModule
+    Client -->|Bearer & Refresh Tokens| JWTGuard --> AttendanceModule & LocationModule & UploadModule
     AuthModule -->|User Records| MongoDB
     AuthModule -->|Welcome Email| Resend
     StoreModule -->|Store Coordinates| MongoDB
     AttendanceModule -->|Distance Math via Geolib| MongoDB
+    LocationModule -->|GPS Logs| MongoDB
     UploadModule -->|Presigned PUT URL| Client
     Client -->|Direct Binary Upload| S3
 ```
 
 ### Repository Structure
 
-```
+```text
 hrms-backend/
 ├── app.js                   # Application entry point, rate limiting, and route mounting
 ├── package.json             # Dependencies, scripts, and package metadata
@@ -122,7 +127,8 @@ hrms-backend/
 │   ├── .eraserdiagram       # Architecture entity relationship diagram
 │   ├── user_model.js        # Mongoose schema for user accounts
 │   ├── store_model.js       # Mongoose schema for stores / workplace locations
-│   └── attendance_model.js   # Mongoose schema for attendance check-ins
+│   ├── attendance_model.js  # Mongoose schema for attendance check-ins
+│   └── location_model.js    # Mongoose schema for employee location tracking
 ├── deploy/                  # Terraform IaC configurations
 │   ├── main.tf              # Provider configuration and backend
 │   ├── modules.tf           # VPC, ECR, and EKS module orchestration
@@ -134,7 +140,7 @@ hrms-backend/
 │   ├── admin/               # Admin login and full attendance query endpoints
 │   ├── auth/                # User login, registration, and activation endpoints
 │   ├── store/               # Store creation and retrieval endpoints
-│   ├── user/                # User-specific utility routes (e.g. proximity checks)
+│   ├── user/                # User proximity and GPS breadcrumb tracking routes
 │   ├── upload/              # Direct-to-S3 presigned upload routes
 │   ├── attendance/          # User attendance check-in and history routes
 │   └── jwt/                 # Token refresh and renewal routes
@@ -179,8 +185,19 @@ erDiagram
         datetime updatedAt
     }
 
+    LOCATION {
+        ObjectId _id PK
+        ObjectId userId FK
+        string latitude
+        string longitude
+        string distance "meters from store"
+        datetime createdAt
+        datetime updatedAt
+    }
+
     STORE ||--o{ USER : "employs"
     USER ||--o{ ATTENDANCE : "submits"
+    USER ||--o{ LOCATION : "records"
 ```
 
 ---
@@ -204,6 +221,7 @@ erDiagram
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -239,6 +257,7 @@ Populate the required environment variables:
   ```
 
 - **Production mode**:
+
   ```bash
   npm start
   ```
@@ -277,11 +296,9 @@ chmod +x deploy.sh
 
 The script automatically connects to AWS EKS, retrieves Terraform outputs (ECR, VPC, IAM roles), updates CoreDNS for Fargate, deploys the AWS Load Balancer Controller, builds and pushes the Docker container, and deploys the Helm chart located in [chart/](chart/).
 
----
+### API Overview & Quickstart Usage
 
-## API Overview & Quickstart Usage
-
-### Security & Authentication Guards
+#### Security & Authentication Guards
 
 The API uses two primary authorization mechanisms:
 
@@ -295,9 +312,9 @@ The API uses two primary authorization mechanisms:
    refresh: <REFRESH_TOKEN>
    ```
 
-### Endpoint Summary
+#### Endpoint Summary
 
-For full request/response schemas, JSON payloads, and parameter definitions, see the [Complete API Reference](docs/API.md).
+For complete request/response schemas, JSON payloads, and parameter definitions, refer to the [Complete API Reference](docs/API.md).
 
 | Category       | Method | Path                             | Required Headers           | Description                                          |
 | :------------- | :----- | :------------------------------- | :------------------------- | :--------------------------------------------------- |
@@ -319,6 +336,7 @@ For full request/response schemas, JSON payloads, and parameter definitions, see
 | **Admin**      | `GET`  | `/account/admin/attendance/:uid` | `account`, `authorization` | Retrieves attendance records for a specific employee |
 | **User**       | `GET`  | `/secure/user/health`            | `authorization`, `refresh` | User module health check                             |
 | **User**       | `POST` | `/secure/user/distance`          | `authorization`, `refresh` | Calculates distance in meters from assigned store    |
+| **User**       | `POST` | `/secure/user/location`          | `authorization`, `refresh` | Records employee real-time GPS coordinates           |
 | **Upload**     | `GET`  | `/secure/upload/health`          | `authorization`, `refresh` | Upload module health check                           |
 | **Upload**     | `POST` | `/secure/upload/image`           | `authorization`, `refresh` | Generates S3 presigned PUT URL for photo upload      |
 | **Attendance** | `GET`  | `/secure/attendance/health`      | `authorization`, `refresh` | Attendance module health check                       |
@@ -326,9 +344,9 @@ For full request/response schemas, JSON payloads, and parameter definitions, see
 | **Attendance** | `GET`  | `/secure/attendance/all`         | `authorization`, `refresh` | Returns full attendance history for current user     |
 | **Attendance** | `POST` | `/secure/attendance/add`         | `authorization`, `refresh` | Verifies distance and logs attendance                |
 
-### Quickstart Workflow Examples
+#### Quickstart Workflow Examples
 
-#### 1. Create a Store Location
+##### 1. Create a Store Location
 
 ```bash
 curl -X POST http://localhost:5500/account/store/create \
@@ -342,7 +360,7 @@ curl -X POST http://localhost:5500/account/store/create \
   }'
 ```
 
-#### 2. Onboard an Employee & Activate Account
+##### 2. Onboard an Employee & Activate Account
 
 Register a new employee linked to the created store (a welcome email with generated credentials is automatically dispatched):
 
@@ -364,7 +382,7 @@ curl -X POST http://localhost:5500/account/auth/validate/<USER_OBJECT_ID> \
   -H "account: your-admin-account-id"
 ```
 
-#### 3. Employee Login
+##### 3. Employee Login
 
 ```bash
 curl -X POST http://localhost:5500/account/auth/login \
@@ -378,7 +396,7 @@ curl -X POST http://localhost:5500/account/auth/login \
 
 _Response returns `authToken` and `refreshToken`._
 
-#### 4. Upload Verification Selfie to AWS S3
+##### 4. Upload Verification Selfie to AWS S3
 
 Request a presigned upload URL:
 
@@ -398,7 +416,7 @@ curl -X PUT "<UPLOAD_URL>" \
   --data-binary "@selfie.webp"
 ```
 
-#### 5. Record Geofenced Attendance
+##### 5. Record Geofenced Attendance
 
 ```bash
 curl -X POST http://localhost:5500/secure/attendance/add \
@@ -414,6 +432,21 @@ curl -X POST http://localhost:5500/secure/attendance/add \
 
 The server automatically computes distance from the employee's assigned store using `geolib` and stores the attendance entry.
 
+##### 6. Track Real-Time GPS Location Breadcrumb
+
+```bash
+curl -X POST http://localhost:5500/secure/user/location \
+  -H "Content-Type: application/json" \
+  -H "authorization: <AUTH_TOKEN>" \
+  -H "refresh: <REFRESH_TOKEN>" \
+  -d '{
+    "latitude": "37.7750",
+    "longitude": "-122.4195"
+  }'
+```
+
+The server computes proximity to the user's assigned store and records the breadcrumb with timestamp.
+
 ---
 
 ## Where Users Can Get Help
@@ -423,7 +456,7 @@ The server automatically computes distance from the employee's assigned store us
 - **Documentation & References**:
   - [API Reference](docs/API.md): Detailed endpoint specifications and JSON contracts.
   - [Route Handlers](routes/): Express controllers and routes.
-  - [Data Models](database/): MongoDB schemas for users, stores, and attendance logs.
+  - [Data Models](database/): MongoDB schemas for users, stores, attendance logs, and location tracks.
   - [Auth & Middleware](utils/): Dual-token JWT and administrative guard implementations.
   - [AWS S3 Integration](aws/): Direct upload presigning logic.
   - [Infrastructure as Code](deploy/): Terraform modules for AWS VPC, ECR, and EKS.

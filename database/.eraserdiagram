@@ -29,5 +29,15 @@ store [icon: building, color: orange] {
     timestamp datetime
 }
 
+location [icon: map, color: purple] {
+    id string pk
+    userId string fk
+    latitude float
+    longitude float
+    distance float
+    timestamp datetime
+}
+
 user.storeId <> store.id
+location.userId <> user.id
 user.id <> attendance.userId

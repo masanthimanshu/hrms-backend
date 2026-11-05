@@ -417,6 +417,34 @@ Calculates distance in meters between provided coordinates and the user's assign
   }
   ```
 
+### `POST /secure/user/location`
+
+Records a user's current GPS location breadcrumb.
+
+- **Headers**:
+  - `authorization`: `<AUTH_TOKEN>`
+  - `refresh`: `<REFRESH_TOKEN>`
+  - `Content-Type`: `application/json`
+- **Request Body**:
+  ```json
+  {
+    "latitude": "37.7750",
+    "longitude": "-122.4195"
+  }
+  ```
+- **Response `200 OK`**:
+  ```json
+  {
+    "status": "Location added successfully"
+  }
+  ```
+- **Error Response `400 Bad Request`**:
+  ```json
+  {
+    "error": "Missing required fields"
+  }
+  ```
+
 ---
 
 ## Media Upload Pipeline
